@@ -88,8 +88,7 @@ func doExec(ctx context.Context, app, env, key, file string, args []string) erro
 		environ = append(environ, k+"="+v)
 	}
 
-	exe, args := args[0], args[1:]
-	path, err := exec.LookPath(exe)
+	path, err := exec.LookPath(args[0])
 	if err != nil {
 		return fmt.Errorf("failed to find executable: %w", err)
 	}
