@@ -206,8 +206,8 @@ func main() {
 			app, env, key := getFlags(cmd)
 
 			file, _ := cmd.PersistentFlags().GetString("file")
-			if app == "" {
-				app = os.Getenv("SECRETENV_FILE")
+			if file == "" {
+				file = os.Getenv("SECRETENV_FILE")
 			}
 
 			return doExec(ctx, app, env, key, file, args)
