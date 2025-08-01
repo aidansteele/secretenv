@@ -148,17 +148,12 @@ func getFlags(cmd *cobra.Command) (app, env, key string) {
 	return
 }
 func promptMissingFlags(app, env, key, name string) (string, string, string, string) {
-	if name == "" {
-		name, _ = getInput("Enter environment variable name (e.g. DB_PASSWORD): ")
-	}
-	if app == "" {
-		app, _ = getInput("Enter app name (e.g. hello-world, auth-service): ")
-	}
-	if env == "" {
-		env, _ = getInput("Enter environment name (e.g. dev, prod): ")
-	}
+	name, _ = getInput("Enter environment variable name (e.g. DB_PASSWORD): ")
+	app, _ = getInput("Enter app name (e.g. hello-world, auth-service): ")
+	env, _ = getInput("Enter environment name (e.g. dev, prod): ")
+	key, _ = getInput("Enter KMS key ID/ARN/Alias(press enter to use alias/secretenv): ")
 	if key == "" {
-		key, _ = getInput("Enter KMS key ID/ARN/Alias(prefix alias with alias/): ")
+		key = "alias/secretenv"
 	}
 
 	return app, env, key, name
@@ -189,7 +184,9 @@ func main() {
 			ctx := cmd.Context()
 			app, env, key := getFlags(cmd)
 			name, _ := cmd.PersistentFlags().GetString("name")
-			app, env, key, name = promptMissingFlags(app, env, key, name)
+			if app == "" && env == "" && name == "" && key == "alias/secretenv" {
+				app, env, key, name = promptMissingFlags(app, env, key, name)
+			}
 			plaintext, _ := getInput("Enter plaintext secret: ")
 			return encrypt(ctx, app, env, key, name, plaintext)
 		},
@@ -202,7 +199,9 @@ func main() {
 			ctx := cmd.Context()
 			app, env, key := getFlags(cmd)
 			name, _ := cmd.PersistentFlags().GetString("name")
-			app, env, key, name = promptMissingFlags(app, env, key, name)
+			if app == "" && env == "" && name == "" && key == "alias/secretenv" {
+				app, env, key, name = promptMissingFlags(app, env, key, name)
+			}
 			prompt := fmt.Sprintf("Enter ciphertext value (including %s prefix): ", Prefix)
 			value, err := getInput(prompt)
 			if err != nil {
