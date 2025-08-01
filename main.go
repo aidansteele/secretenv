@@ -147,6 +147,33 @@ func getFlags(cmd *cobra.Command) (app, env, key string) {
 
 	return
 }
+func promptMissingFlags(app, env, key, name string) (string, string, string, string) {
+	if name == "" {
+		name, _ = getInput("Enter environment variable name (e.g. DB_PASSWORD): ")
+	}
+	if app == "" {
+		app, _ = getInput("Enter app name (e.g. hello-world, auth-service): ")
+	}
+	if env == "" {
+		env, _ = getInput("Enter environment name (e.g. dev, prod): ")
+	}
+	if key == "" {
+		key, _ = getInput("Enter KMS key ID/ARN/Alias(prefix alias with alias/): ")
+	}
+
+	return app, env, key, name
+}
+
+func getInput(prompt string) (string, error) {
+	fmt.Fprintf(os.Stderr, prompt)
+	buf := bufio.NewReader(os.Stdin)
+	value, err := buf.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	value = strings.TrimSpace(value)
+	return value, err
+}
 
 func main() {
 	rootCmd := &cobra.Command{
@@ -162,16 +189,9 @@ func main() {
 			ctx := cmd.Context()
 			app, env, key := getFlags(cmd)
 			name, _ := cmd.PersistentFlags().GetString("name")
-
-			fmt.Fprintf(os.Stderr, "Enter plaintext secret: ")
-			buf := bufio.NewReader(os.Stdin)
-			value, err := buf.ReadString('\n')
-			if err != nil {
-				return err
-			}
-
-			value = strings.TrimSpace(value)
-			return encrypt(ctx, app, env, key, name, value)
+			app, env, key, name = promptMissingFlags(app, env, key, name)
+			plaintext, _ := getInput("Enter plaintext secret: ")
+			return encrypt(ctx, app, env, key, name, plaintext)
 		},
 	}
 
@@ -182,15 +202,12 @@ func main() {
 			ctx := cmd.Context()
 			app, env, key := getFlags(cmd)
 			name, _ := cmd.PersistentFlags().GetString("name")
-
-			fmt.Fprintf(os.Stderr, "Enter ciphertext value (including %s prefix): ", Prefix)
-			buf := bufio.NewReader(os.Stdin)
-			value, err := buf.ReadString('\n')
+			app, env, key, name = promptMissingFlags(app, env, key, name)
+			prompt := fmt.Sprintf("Enter ciphertext value (including %s prefix): ", Prefix)
+			value, err := getInput(prompt)
 			if err != nil {
 				return err
 			}
-
-			value = strings.TrimSpace(value)
 			return decrypt(ctx, app, env, key, name, value)
 		},
 	}
