@@ -147,6 +147,28 @@ func getFlags(cmd *cobra.Command) (app, env, key string) {
 
 	return
 }
+func promptMissingFlags(app, env, key, name string) (string, string, string, string) {
+	name, _ = getInput("Enter environment variable name (e.g. DB_PASSWORD): ")
+	app, _ = getInput("Enter app name (e.g. hello-world, auth-service): ")
+	env, _ = getInput("Enter environment name (e.g. dev, prod): ")
+	key, _ = getInput("Enter KMS key ID/ARN/Alias(press enter to use alias/secretenv): ")
+	if key == "" {
+		key = "alias/secretenv"
+	}
+
+	return app, env, key, name
+}
+
+func getInput(prompt string) (string, error) {
+	fmt.Fprintf(os.Stderr, prompt)
+	buf := bufio.NewReader(os.Stdin)
+	value, err := buf.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	value = strings.TrimSpace(value)
+	return value, err
+}
 
 func main() {
 	rootCmd := &cobra.Command{
@@ -162,16 +184,11 @@ func main() {
 			ctx := cmd.Context()
 			app, env, key := getFlags(cmd)
 			name, _ := cmd.PersistentFlags().GetString("name")
-
-			fmt.Fprintf(os.Stderr, "Enter plaintext secret: ")
-			buf := bufio.NewReader(os.Stdin)
-			value, err := buf.ReadString('\n')
-			if err != nil {
-				return err
+			if app == "" && env == "" && name == "" && key == "alias/secretenv" {
+				app, env, key, name = promptMissingFlags(app, env, key, name)
 			}
-
-			value = strings.TrimSpace(value)
-			return encrypt(ctx, app, env, key, name, value)
+			plaintext, _ := getInput("Enter plaintext secret: ")
+			return encrypt(ctx, app, env, key, name, plaintext)
 		},
 	}
 
@@ -182,15 +199,14 @@ func main() {
 			ctx := cmd.Context()
 			app, env, key := getFlags(cmd)
 			name, _ := cmd.PersistentFlags().GetString("name")
-
-			fmt.Fprintf(os.Stderr, "Enter ciphertext value (including %s prefix): ", Prefix)
-			buf := bufio.NewReader(os.Stdin)
-			value, err := buf.ReadString('\n')
+			if app == "" && env == "" && name == "" && key == "alias/secretenv" {
+				app, env, key, name = promptMissingFlags(app, env, key, name)
+			}
+			prompt := fmt.Sprintf("Enter ciphertext value (including %s prefix): ", Prefix)
+			value, err := getInput(prompt)
 			if err != nil {
 				return err
 			}
-
-			value = strings.TrimSpace(value)
 			return decrypt(ctx, app, env, key, name, value)
 		},
 	}

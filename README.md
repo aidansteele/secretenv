@@ -1,5 +1,9 @@
 # secretenv
 
+A CLI tool to encrypt/decrypt values different app environments using aws kms.
+Secrets can be encrypted and populated into a yml file(e.g.`dev.yml`) which can then be decrypted before executing your app.
+
+
 ```yaml
 # my-secrets.yml
 # secretenv installation
